@@ -88,7 +88,7 @@ bool Board::checkMove(Move *m, Side side) {
             // Is there a capture in that direction?
             int x = X + dx;
             int y = Y + dy;
-            if (onBoard(x, y) && get(other, x, y)) {
+            if (onBoard(x, y) && get(other, x, y )) {
                 do {
                     x += dx;
                     y += dy;

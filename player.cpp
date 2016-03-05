@@ -9,7 +9,7 @@ Player::Player(Side side) {
     // Will be set to true in test_minimax.cpp.
     testingMinimax = false;
 
-    self.side = side;
+    this->side = side;
 }
 
 /*
@@ -31,22 +31,21 @@ Player::~Player() {
  * return NULL.
  */
 Move *Player::doMove(Move *opponentsMove, int msLeft) {
-    Move * return_move = new Move;          // return move
+    Move * return_move = new Move(0, 0);          // return move
     // update board
-    if(self.side == BLACK){
-        self.board.doMove(opponentsMove, WHITE);
+    if(this->side == BLACK){
+        this->board.doMove(opponentsMove, WHITE);
     }
     else{
-        self.board.doMove(opponentsMove, BLACK);
+        this->board.doMove(opponentsMove, BLACK);
     }
     // check if game is over
-    if(self.board.isDone()){
+    if(this->board.isDone()){
         return NULL;        // if game is over, no move is possible
     }
     // now determine next move
     for(int i = 0; i < 8; i++){
         for(int j = 0; j < 8; j++){
-            board.checkMove(Move(i, j), self.side);
         }
     }
 

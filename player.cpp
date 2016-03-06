@@ -1,5 +1,5 @@
 #include "player.h"
-
+#include <map>
 
 using namespace std;
 
@@ -9,6 +9,7 @@ using namespace std;
 Brain::Brain()
 {
     this->tree = new Node [(int)(MEMSIZE/sizeof(Node))];
+    this->bottomlevel = 0;
 }
 
 Brain::~Brain()
@@ -38,14 +39,20 @@ Player::~Player() {
 }
 
 
+inline Side enemyof(Side side)
+{
+    return (side == BLACK ? WHITE : BLACK);
+}
+
 
 inline void initNode(Node &current, Node *ancestor, uint8_t level, int8_t score,
-        Board board)
+        Board board, Side lastmove)
 {
     current.ancestor = ancestor;
     current.level = level;
     current.score = score;
     current.board = board;
+    current.lastmove = lastmove;
 }
 
 /*
@@ -81,7 +88,9 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     int start = 0, end = 1, newend;
 
     // Construct the first node
-    initNode(this->brain.tree[0], NULL, 0, 0, this->board);
+    initNode(this->brain.tree[0], NULL, 0, 0, this->board, enemyof(this->side));
+
+    this->brain.bottomlevel = 0;
 
     // Fill the "tree"
     for(int i = 0; i < SEARCH_DEPTH; i++)
@@ -93,13 +102,21 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
         }
         start = end;
         end = newend;
+        this->brain.bottomlevel++;
     }
 
-    return_move->x = this->brain.tree[1].x;
-    return_move->y = this->brain.tree[1].y;
+
+    Node *return_node = this->findMinimax();
+
+    return_move->x = return_node->ancestor->x;
+    return_move->y = return_node->ancestor->y;
 
 
-    //delete [] tree;
+    // Reset our tree so that it does not confuse our minimax method.
+    for(unsigned int i = 0; i < MEMLEN; i++)
+    {
+        this->brain.tree[i].level = 127;
+    }
 
     this->board.doMove(return_move, this->side);
     return return_move;
@@ -122,41 +139,88 @@ int Player::buildLevel(int start, int end, Node *tree)
     Board currBrd, newBrd;
     Move move (0, 0);
     int8_t level;
+
+    // Sign to account for the polarity of our heuristic. See `board.cpp'
+    int8_t sign = (this->side == BLACK ? 1 : -1);
+    int8_t score;
+
+    Side currSide;
     
     for(idx = start, outidx = end; idx < end; idx++)
     {
         level = this->brain.tree[idx].level;
         currBrd = this->brain.tree[idx].board; // fetch the board
 
-        for(i = 0; i < BRDSIZE; i++)
-        {
-            for(j = 0; j < BRDSIZE; j++)
-            {
-                move.x = i;
-                move.y = j;
-                if(currBrd.checkMove(&move, this->side))
-                {
-                    newBrd = currBrd;
-                    newBrd.doMove(&move, this->side);
-                    // Come back here to implement heuristic
-                    initNode(this->brain.tree[outidx], NULL, level+1, 0,
-                             newBrd);
 
-                    if(!level) // If level is zero we just made the first level
+        currSide = enemyof(this->brain.tree[idx].lastmove);
+        if(!currBrd.hasMoves(currSide))
+        {
+            currSide = enemyof(currSide);
+        }
+
+        if(!currBrd.hasMoves(currSide)) // In this case someone must have won we
+                                        // need to just copy this state down so 
+                                        // it gets properly compared with other 
+                                        // alternatives.
+        {
+            newBrd = currBrd;
+
+            // Use our heuristic:
+            score = sign*(newBrd.heuristic());    
+            
+            initNode(this->brain.tree[outidx], NULL, level+1, score,
+                     newBrd, currSide);
+
+            if(!level) // If level is zero we just made a node in the first level
+            {
+                this->brain.tree[outidx].ancestor = 
+                &(this->brain.tree[outidx]);
+                this->brain.tree[outidx].x = i;
+                this->brain.tree[outidx].y = j;
+            } else {
+                this->brain.tree[outidx].ancestor = 
+                this->brain.tree[idx].ancestor;
+            }
+            outidx++;
+            if((unsigned int)outidx >= MEMLEN)
+            {
+                cerr << "OUT OF MEMORY!" << endl;
+                return 0;
+            }
+        } else {
+            for(i = 0; i < BRDSIZE; i++)
+            {
+                for(j = 0; j < BRDSIZE; j++)
+                {
+                    move.x = i;
+                    move.y = j;
+                    if(currBrd.checkMove(&move, currSide))
                     {
-                        this->brain.tree[outidx].ancestor = 
-                        &(this->brain.tree[outidx]);
-                        this->brain.tree[outidx].x = i;
-                        this->brain.tree[outidx].y = j;
-                    } else {
-                        this->brain.tree[outidx].ancestor = 
-                        this->brain.tree[idx].ancestor;
-                    }
-                    outidx++;
-                    if(outidx >= MEMLEN)
-                    {
-                        cerr << "OUT OF MEMORY!" << endl;
-                        return 0;
+                        newBrd = currBrd;
+                        newBrd.doMove(&move, currSide);
+
+                        // Use our heuristic:
+                        score = sign*(newBrd.heuristic()); 
+                        
+                        initNode(this->brain.tree[outidx], NULL, level+1, score,
+                                 newBrd, currSide);
+
+                        if(!level) // If level is zero we just made the first level
+                        {
+                            this->brain.tree[outidx].ancestor = 
+                            &(this->brain.tree[outidx]);
+                            this->brain.tree[outidx].x = i;
+                            this->brain.tree[outidx].y = j;
+                        } else {
+                            this->brain.tree[outidx].ancestor = 
+                            this->brain.tree[idx].ancestor;
+                        }
+                        outidx++;
+                        if((unsigned int)outidx >= MEMLEN)
+                        {
+                            cerr << "OUT OF MEMORY!" << endl;
+                            return 0;
+                        }
                     }
                 }
             }
@@ -165,3 +229,89 @@ int Player::buildLevel(int start, int end, Node *tree)
     
     return outidx;
 }
+
+
+
+
+/**
+ * findMinimax: This function finds the minimum gain of any move by looking
+ * at the ancestor of each node at the lowest level.
+ * 
+ * return: It returns the ancestor node of the minimax brach.
+*/
+Node * Player::findMinimax(){
+    Node * curr_ancestor = NULL; // One should always be an 
+                                                // ancestor if we have valid 
+                                                // moves
+    Node * max_ancestor = &this->brain.tree[1];
+    int branch_min;             // min of the branch
+    int curr_score;
+
+    int minimax = -10000;
+
+    std::map<Node *, int> branchmins;
+    std::map<Node *, int>::iterator read;
+    
+
+    for(int i = 0; i < (int) MEMLEN;){
+        if(this->brain.tree[i].level == this->brain.bottomlevel){
+            branch_min = 10000;
+            curr_ancestor = this->brain.tree[i].ancestor;
+
+            while((this->brain.tree[i].level == this->brain.bottomlevel) && 
+                  (this->brain.tree[i].ancestor == curr_ancestor))
+            {
+                curr_score = this->brain.tree[i].score;
+                
+                if(branch_min > curr_score);
+                {
+                    branch_min = curr_score;
+                }
+                i++;
+            }
+
+            branchmins[curr_ancestor] = branch_min;
+        } else
+        {
+            i++;
+        }
+    }
+    for(read = branchmins.begin(); read != branchmins.end(); read++)
+    {
+        if(read->second > minimax)
+        {
+            minimax = read->second;
+            max_ancestor = read->first;
+        } 
+    }
+    return max_ancestor;
+}
+
+//Node * Player::findMinimax(){
+//    Node * curr_ancestor = NULL;
+//    Node * min_ancestor = &(brain.tree[1]);
+//    int branch_min = -10000;             // min of the branch
+//    int current_min = -1000000;
+//    for(int i = 0; i < (int) MEMLEN; i++){
+//        if(this->brain.tree[i].level == this->brain.bottomlevel){
+//            // change branch
+//            if(this->brain.tree[i].ancestor != curr_ancestor){
+//                // if better branch
+//                if(branch_min > current_min){
+//                    current_min = branch_min;
+//                    if(curr_ancestor != NULL){          // only on first iteration
+//                        min_ancestor = curr_ancestor;
+//                    }
+//                }
+//                curr_ancestor = this->brain.tree[i].ancestor;
+//                branch_min = this->brain.tree[i].score;
+//            }
+//            else{
+//                if(this->brain.tree[i].score < branch_min){
+//                    branch_min = this->brain.tree[i].score;
+//                }
+//            }
+//        }
+//    }
+//    return min_ancestor;
+//}

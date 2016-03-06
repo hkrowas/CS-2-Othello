@@ -3,6 +3,10 @@
 
 #include <bitset>
 #include "common.h"
+
+#define WINSC (40)
+#define CORNSCR (25)
+
 using namespace std;
 
 class Board {
@@ -28,6 +32,8 @@ public:
     int count(Side side);
     int countBlack();
     int countWhite();
+
+    int8_t heuristic();
 
     void setBoard(char data[]);
 };

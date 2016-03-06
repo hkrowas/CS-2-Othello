@@ -2,14 +2,13 @@
 #define __PLAYER_H__
 
 #include <iostream>
-#include <stdint.h>
 #include "common.h"
 #include "board.h"
 
 #define MEMSIZE (750000000)
 #define MEMLEN (MEMSIZE/sizeof(Node))
 #define BRDSIZE (8)
-#define SEARCH_DEPTH (4)
+#define SEARCH_DEPTH (8)
 
 using namespace std;
 
@@ -30,6 +29,8 @@ struct Node
     uint8_t x;
     uint8_t y;
 
+    Side lastmove;
+
     Board board;
 };
 
@@ -42,6 +43,8 @@ struct Node
 struct Brain
 {
     Node *tree;
+
+    int8_t bottomlevel;
 
     Brain();
     ~Brain();
@@ -66,6 +69,7 @@ public:
     bool testingMinimax;
 
     int buildLevel(int start, int end, Node *tree);
+    Node * findMinimax();
 };
 
 

@@ -1,12 +1,23 @@
 #include "player.h"
-#include <iostream>
 
-#define MEMSIZE (10000)
-#define MEMLEN (MEMSIZE/sizeof(Node))
-#define BRDSIZE (8)
-#define SEARCH_DEPTH (2)
 
 using namespace std;
+
+/**
+ * Brain: initializer for the "Brain" class (see `player.h')
+ */
+Brain::Brain()
+{
+    this->tree = new Node [(int)(MEMSIZE/sizeof(Node))];
+}
+
+Brain::~Brain()
+{
+    delete [] this->tree;
+}
+
+
+
 
 /*
  * Constructor for the player; initialize everything here. The side your AI is
@@ -65,26 +76,30 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     }
 
 
-    // Allocate space for our tree:
-    Node *tree = new Node [(int)(MEMSIZE/sizeof(Node))];
+    //// Allocate space for our tree:
+    //Node *tree = new Node [(int)(MEMSIZE/sizeof(Node))];
     int start = 0, end = 1, newend;
 
     // Construct the first node
-    initNode(tree[0], NULL, 0, 0, this->board);
+    initNode(this->brain.tree[0], NULL, 0, 0, this->board);
 
     // Fill the "tree"
     for(int i = 0; i < SEARCH_DEPTH; i++)
     { 
-        newend = this->buildLevel(start, end, tree);
+        newend = this->buildLevel(start, end, this->brain.tree);
+        if(!newend)
+        {
+            break; // If we've run out of memory
+        }
         start = end;
         end = newend;
     }
 
-    return_move->x = tree[1].x;
-    return_move->y = tree[1].y;
+    return_move->x = this->brain.tree[1].x;
+    return_move->y = this->brain.tree[1].y;
 
 
-    delete [] tree;
+    //delete [] tree;
 
     this->board.doMove(return_move, this->side);
     return return_move;
@@ -110,8 +125,9 @@ int Player::buildLevel(int start, int end, Node *tree)
     
     for(idx = start, outidx = end; idx < end; idx++)
     {
-        level = tree[idx].level;
-        currBrd = tree[idx].board; // fetch the board
+        level = this->brain.tree[idx].level;
+        currBrd = this->brain.tree[idx].board; // fetch the board
+
         for(i = 0; i < BRDSIZE; i++)
         {
             for(j = 0; j < BRDSIZE; j++)
@@ -123,17 +139,25 @@ int Player::buildLevel(int start, int end, Node *tree)
                     newBrd = currBrd;
                     newBrd.doMove(&move, this->side);
                     // Come back here to implement heuristic
-                    initNode(tree[outidx], NULL, level+1, 0, newBrd);
+                    initNode(this->brain.tree[outidx], NULL, level+1, 0,
+                             newBrd);
 
                     if(!level) // If level is zero we just made the first level
                     {
-                        tree[outidx].ancestor = &tree[outidx];
-                        tree[outidx].x = i;
-                        tree[outidx].y = j;
+                        this->brain.tree[outidx].ancestor = 
+                        &(this->brain.tree[outidx]);
+                        this->brain.tree[outidx].x = i;
+                        this->brain.tree[outidx].y = j;
                     } else {
-                        tree[outidx].ancestor = tree[idx].ancestor;
+                        this->brain.tree[outidx].ancestor = 
+                        this->brain.tree[idx].ancestor;
                     }
                     outidx++;
+                    if(outidx >= MEMLEN)
+                    {
+                        cerr << "OUT OF MEMORY!" << endl;
+                        return 0;
+                    }
                 }
             }
         }

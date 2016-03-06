@@ -5,6 +5,12 @@
 #include <stdint.h>
 #include "common.h"
 #include "board.h"
+
+#define MEMSIZE (750000000)
+#define MEMLEN (MEMSIZE/sizeof(Node))
+#define BRDSIZE (8)
+#define SEARCH_DEPTH (4)
+
 using namespace std;
 
 
@@ -27,6 +33,20 @@ struct Node
     Board board;
 };
 
+/**
+ * Brain: this struct holds the contents of the players "brain". Most
+ * important is the tree of moves that may happen from the current state.
+ * However, this wrapper is used so that it may be extended to other fields,
+ * such as current depth of the tree.
+ */
+struct Brain
+{
+    Node *tree;
+
+    Brain();
+    ~Brain();
+};
+
 
 
 class Player {
@@ -37,6 +57,8 @@ public:
     
     Board board;
     Side side;
+
+    Brain brain;
 
     Move *doMove(Move *opponentsMove, int msLeft);
 

@@ -1,4 +1,12 @@
 #include "player.h"
+#include <iostream>
+
+#define MEMSIZE (10000)
+#define MEMLEN (MEMSIZE/sizeof(Node))
+#define BRDSIZE (8)
+#define SEARCH_DEPTH (2)
+
+using namespace std;
 
 /*
  * Constructor for the player; initialize everything here. The side your AI is
@@ -16,6 +24,17 @@ Player::Player(Side side) {
  * Destructor for the player.
  */
 Player::~Player() {
+}
+
+
+
+inline void initNode(Node &current, Node *ancestor, uint8_t level, int8_t score,
+        Board board)
+{
+    current.ancestor = ancestor;
+    current.level = level;
+    current.score = score;
+    current.board = board;
 }
 
 /*
@@ -39,15 +58,86 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     else{
         this->board.doMove(opponentsMove, BLACK);
     }
+
     // check if game is over
-    if(this->board.isDone()){
+    if(!this->board.hasMoves(this->side)){
         return NULL;        // if game is over, no move is possible
     }
-    // now determine next move
-    for(int i = 0; i < 8; i++){
-        for(int j = 0; j < 8; j++){
-        }
+
+
+    // Allocate space for our tree:
+    Node *tree = new Node [(int)(MEMSIZE/sizeof(Node))];
+    int start = 0, end = 1, newend;
+
+    // Construct the first node
+    initNode(tree[0], NULL, 0, 0, this->board);
+
+    // Fill the "tree"
+    for(int i = 0; i < SEARCH_DEPTH; i++)
+    { 
+        newend = this->buildLevel(start, end, tree);
+        start = end;
+        end = newend;
     }
 
-    return NULL;
+    return_move->x = tree[1].x;
+    return_move->y = tree[1].y;
+
+
+    delete [] tree;
+
+    this->board.doMove(return_move, this->side);
+    return return_move;
+}
+
+
+/**
+ * buildLevel: This function reads through a specified range of nodes in the
+ * tree (intended to be all of the nodes in a particular level) and adds all of
+ * their children to the end of the tree after end. This effectively builds the
+ * next level into our data structure.
+ *
+ * return: It returns the index which is just past the last node added so that
+ * this value can be subsequently be used on the next level of depth in the
+ * tree.
+ */
+int Player::buildLevel(int start, int end, Node *tree)
+{
+    int idx, outidx, i, j;
+    Board currBrd, newBrd;
+    Move move (0, 0);
+    int8_t level;
+    
+    for(idx = start, outidx = end; idx < end; idx++)
+    {
+        level = tree[idx].level;
+        currBrd = tree[idx].board; // fetch the board
+        for(i = 0; i < BRDSIZE; i++)
+        {
+            for(j = 0; j < BRDSIZE; j++)
+            {
+                move.x = i;
+                move.y = j;
+                if(currBrd.checkMove(&move, this->side))
+                {
+                    newBrd = currBrd;
+                    newBrd.doMove(&move, this->side);
+                    // Come back here to implement heuristic
+                    initNode(tree[outidx], NULL, level+1, 0, newBrd);
+
+                    if(!level) // If level is zero we just made the first level
+                    {
+                        tree[outidx].ancestor = &tree[outidx];
+                        tree[outidx].x = i;
+                        tree[outidx].y = j;
+                    } else {
+                        tree[outidx].ancestor = tree[idx].ancestor;
+                    }
+                    outidx++;
+                }
+            }
+        }
+    }
+    
+    return outidx;
 }

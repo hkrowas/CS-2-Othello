@@ -45,7 +45,7 @@ inline Side enemyof(Side side)
 }
 
 
-inline void initNode(Node &current, Node *ancestor, uint8_t level, int8_t score,
+inline void initNode(Node &current, Node *ancestor, uint8_t level, int16_t score,
         Board board, Side lastmove)
 {
     current.ancestor = ancestor;
@@ -142,7 +142,7 @@ int Player::buildLevel(int start, int end, Node *tree)
 
     // Sign to account for the polarity of our heuristic. See `board.cpp'
     int8_t sign = (this->side == BLACK ? 1 : -1);
-    int8_t score;
+    int16_t score;
 
     Side currSide;
     
@@ -150,28 +150,18 @@ int Player::buildLevel(int start, int end, Node *tree)
     {
         level = this->brain.tree[idx].level;
         currBrd = this->brain.tree[idx].board; // fetch the board
-
-
         currSide = enemyof(this->brain.tree[idx].lastmove);
-        if(!currBrd.hasMoves(currSide))
-        {
-            currSide = enemyof(currSide);
-        }
 
-        if(!currBrd.hasMoves(currSide)) // In this case someone must have won we
-                                        // need to just copy this state down so 
-                                        // it gets properly compared with other 
-                                        // alternatives.
+
+        if(!currBrd.hasMoves(currSide)) // In this case this side cannot move.
         {
             newBrd = currBrd;
+            score = sign*(newBrd.heuristic());
 
-            // Use our heuristic:
-            score = sign*(newBrd.heuristic());    
-            
             initNode(this->brain.tree[outidx], NULL, level+1, score,
                      newBrd, currSide);
 
-            if(!level) // If level is zero we just made a node in the first level
+            if(!level) // If level is zero we just made the first level
             {
                 this->brain.tree[outidx].ancestor = 
                 &(this->brain.tree[outidx]);
@@ -226,7 +216,6 @@ int Player::buildLevel(int start, int end, Node *tree)
             }
         }
     }
-    
     return outidx;
 }
 

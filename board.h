@@ -4,8 +4,8 @@
 #include <bitset>
 #include "common.h"
 
-#define WINSC (40)
-#define CORNSCR (25)
+#define WINSC (100)
+#define CORNSCR (7)
 
 using namespace std;
 
@@ -33,7 +33,7 @@ public:
     int countBlack();
     int countWhite();
 
-    int8_t heuristic();
+    int16_t heuristic();
 
     void setBoard(char data[]);
 };

@@ -8,7 +8,7 @@
 #define MEMSIZE (750000000)
 #define MEMLEN (MEMSIZE/sizeof(Node))
 #define BRDSIZE (8)
-#define SEARCH_DEPTH (8)
+#define SEARCH_DEPTH (10)
 
 using namespace std;
 
@@ -24,7 +24,7 @@ struct Node
 {
     Node *ancestor;
 
-    int8_t score;
+    int16_t score;
     uint8_t level;
     uint8_t x;
     uint8_t y;

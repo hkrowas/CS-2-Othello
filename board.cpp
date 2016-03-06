@@ -187,14 +187,13 @@ void Board::setBoard(char data[]) {
  * heuristic: A very basic heuristic for weighting different boards. Polarized
  * such that negative is better for white.
  */
-int8_t Board::heuristic()
+int16_t Board::heuristic()
 {
     int base = this->countBlack() - this->countWhite();
     int sign = (base != 0 ? abs(base)/base : 0);
 
-    int ret = base;
-        //(this->hasMoves(WHITE) || this->hasMoves(BLACK)) ? base : 
-        //                                                          sign*WINSC;
+    int ret = (this->hasMoves(WHITE) || this->hasMoves(BLACK)) ? base : base +
+        sign*WINSC;
 
     //check corners
     ret += this->get(BLACK, 0, 0) ? CORNSCR : 0;
@@ -211,6 +210,8 @@ int8_t Board::heuristic()
     
     return((int8_t)ret);
 }
+
+
 
 
 

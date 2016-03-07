@@ -5,7 +5,7 @@
 #include "common.h"
 
 #define WINSC (100)
-#define CORNSCR (7)
+#define CORNSCR (25)
 
 using namespace std;
 

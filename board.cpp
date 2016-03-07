@@ -192,8 +192,7 @@ int16_t Board::heuristic()
     int base = this->countBlack() - this->countWhite();
     int sign = (base != 0 ? abs(base)/base : 0);
 
-    int ret = (this->hasMoves(WHITE) || this->hasMoves(BLACK)) ? base : base +
-        sign*WINSC;
+    int ret = (this->hasMoves(WHITE) || this->hasMoves(BLACK)) ? base : base*WINSC;
 
     //check corners
     ret += this->get(BLACK, 0, 0) ? CORNSCR : 0;
@@ -208,7 +207,7 @@ int16_t Board::heuristic()
     ret += this->get(BLACK, 7, 7) ? CORNSCR : 0;
     ret -= this->get(WHITE, 7, 7) ? CORNSCR : 0;
     
-    return((int8_t)ret);
+    return((int16_t)ret);
 }
 
 

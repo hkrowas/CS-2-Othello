@@ -8,7 +8,7 @@
 #define MEMSIZE (750000000)
 #define MEMLEN (MEMSIZE/sizeof(Node))
 #define BRDSIZE (8)
-#define SEARCH_DEPTH (10)
+#define SEARCH_DEPTH (5)
 
 using namespace std;
 
@@ -44,7 +44,7 @@ struct Brain
 {
     Node *tree;
 
-    int8_t bottomlevel;
+    uint8_t bottomlevel;
 
     Brain();
     ~Brain();
@@ -68,7 +68,9 @@ public:
     // Flag to tell if the player is running within the test_minimax context
     bool testingMinimax;
 
-    int buildLevel(int start, int end, Node *tree);
+    int buildLevel(int start, int end);
+    int buildFirstLevel();
+
     Node * findMinimax();
 };
 

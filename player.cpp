@@ -1,5 +1,6 @@
 #include "player.h"
 #include <map>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -85,17 +86,20 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
 
     //// Allocate space for our tree:
     //Node *tree = new Node [(int)(MEMSIZE/sizeof(Node))];
-    int start = 0, end = 1, newend;
+    int start, end, newend;
 
     // Construct the first node
     initNode(this->brain.tree[0], NULL, 0, 0, this->board, enemyof(this->side));
 
-    this->brain.bottomlevel = 0;
 
     // Fill the "tree"
-    for(int i = 0; i < SEARCH_DEPTH; i++)
+    start = 1;  
+    end = this->buildFirstLevel();
+    this->brain.bottomlevel = 1;
+
+    for(int i = 1; i < SEARCH_DEPTH; i++)
     { 
-        newend = this->buildLevel(start, end, this->brain.tree);
+        newend = this->buildLevel(start, end);
         if(!newend)
         {
             break; // If we've run out of memory
@@ -133,12 +137,12 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
  * this value can be subsequently be used on the next level of depth in the
  * tree.
  */
-int Player::buildLevel(int start, int end, Node *tree)
+int Player::buildLevel(int start, int end)
 {
     int idx, outidx, i, j;
     Board currBrd, newBrd;
     Move move (0, 0);
-    int8_t level;
+    uint8_t level;
 
     // Sign to account for the polarity of our heuristic. See `board.cpp'
     int8_t sign = (this->side == BLACK ? 1 : -1);
@@ -156,21 +160,13 @@ int Player::buildLevel(int start, int end, Node *tree)
         if(!currBrd.hasMoves(currSide)) // In this case this side cannot move.
         {
             newBrd = currBrd;
-            score = sign*(newBrd.heuristic());
+            score = this->brain.tree[idx].score;
 
             initNode(this->brain.tree[outidx], NULL, level+1, score,
                      newBrd, currSide);
 
-            if(!level) // If level is zero we just made the first level
-            {
-                this->brain.tree[outidx].ancestor = 
-                &(this->brain.tree[outidx]);
-                this->brain.tree[outidx].x = i;
-                this->brain.tree[outidx].y = j;
-            } else {
-                this->brain.tree[outidx].ancestor = 
-                this->brain.tree[idx].ancestor;
-            }
+            this->brain.tree[outidx].ancestor = 
+            this->brain.tree[idx].ancestor;
             outidx++;
             if((unsigned int)outidx >= MEMLEN)
             {
@@ -195,17 +191,10 @@ int Player::buildLevel(int start, int end, Node *tree)
                         initNode(this->brain.tree[outidx], NULL, level+1, score,
                                  newBrd, currSide);
 
-                        if(!level) // If level is zero we just made the first level
-                        {
-                            this->brain.tree[outidx].ancestor = 
-                            &(this->brain.tree[outidx]);
-                            this->brain.tree[outidx].x = i;
-                            this->brain.tree[outidx].y = j;
-                        } else {
-                            this->brain.tree[outidx].ancestor = 
-                            this->brain.tree[idx].ancestor;
-                        }
+                        this->brain.tree[outidx].ancestor = 
+                        this->brain.tree[idx].ancestor;
                         outidx++;
+                        
                         if((unsigned int)outidx >= MEMLEN)
                         {
                             cerr << "OUT OF MEMORY!" << endl;
@@ -219,7 +208,57 @@ int Player::buildLevel(int start, int end, Node *tree)
     return outidx;
 }
 
+/**
+ * buildFirstLevel: see buildLevel. This function does the same thing only it
+ * is specifically intended to be used for the first level. This level is
+ * special becuase it represents the choices we may make from our current
+ * position.
+ */
+int Player::buildFirstLevel()
+{
+    int outidx, i, j;
+    Board currBrd, newBrd;
+    Move move (0, 0);
 
+    // Sign to account for the polarity of our heuristic. See `board.cpp'
+    int8_t sign = (this->side == BLACK ? 1 : -1);
+    int16_t score;
+
+    Side currSide;
+    
+    currBrd = this->brain.tree[0].board; // fetch the board
+    currSide = enemyof(this->brain.tree[0].lastmove);
+    outidx = 1;
+
+    for(i = 0; i < BRDSIZE; i++)
+    {
+        for(j = 0; j < BRDSIZE; j++)
+        {
+            move.x = i;
+            move.y = j;
+            if(currBrd.checkMove(&move, currSide))
+            {
+                newBrd = currBrd;
+                newBrd.doMove(&move, currSide);
+
+                // Use our heuristic:
+                score = sign*(newBrd.heuristic()); 
+                
+                initNode(this->brain.tree[outidx], NULL, 1, score,
+                         newBrd, currSide);
+                
+                this->brain.tree[outidx].ancestor = 
+                &(this->brain.tree[outidx]);
+
+                this->brain.tree[outidx].x = i;
+                this->brain.tree[outidx].y = j;
+
+                outidx++;
+            }
+        }
+    }
+    return outidx;
+}
 
 
 /**
@@ -265,8 +304,12 @@ Node * Player::findMinimax(){
             i++;
         }
     }
+
+    cerr << "Level: " << (int)this->brain.bottomlevel << endl;
     for(read = branchmins.begin(); read != branchmins.end(); read++)
     {
+
+        cerr << read->first << "\t" << read->second << endl;
         if(read->second > minimax)
         {
             minimax = read->second;

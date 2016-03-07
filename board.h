@@ -4,8 +4,8 @@
 #include <bitset>
 #include "common.h"
 
-#define WINSC (100)
-#define CORNSCR (25)
+#define WINSC (50)
+#define CORNSCR (15)
 
 using namespace std;
 

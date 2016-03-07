@@ -197,6 +197,10 @@ public class OthelloGame implements Runnable {
             r.whiteScore = board.countWhite();
             // The total running time for these guys is already set.
             observer.OnGameOver(r);
+
+
+            //System.err.println(r.blackScore - r.whiteScore);
+            //System.exit(0);
         }
     }
 

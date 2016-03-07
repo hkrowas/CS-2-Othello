@@ -2,6 +2,8 @@
 #include <map>
 #include <stdlib.h>
 
+#define INFTY (30000)
+
 using namespace std;
 
 /**
@@ -47,13 +49,15 @@ inline Side enemyof(Side side)
 
 
 inline void initNode(Node &current, Node *ancestor, uint8_t level, int16_t score,
-        Board board, Side lastmove)
+        Board board, Side lastmove, Node *child, Node *sibling)
 {
     current.ancestor = ancestor;
     current.level = level;
     current.score = score;
     current.board = board;
     current.lastmove = lastmove;
+    current.child = child;
+    current.sibling = sibling;
 }
 
 /*
@@ -89,7 +93,8 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     int start, end, newend;
 
     // Construct the first node
-    initNode(this->brain.tree[0], NULL, 0, 0, this->board, enemyof(this->side));
+    initNode(this->brain.tree[0], NULL, 0, 0, this->board, enemyof(this->side), 
+             NULL, NULL);
 
 
     // Fill the "tree"
@@ -109,12 +114,15 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
         this->brain.bottomlevel++;
     }
 
+    //cerr << "MEMORY USED: " << 100*((double)end)/((double)MEMLEN) 
+    //                        << "%" << endl;
+
 
     Node *return_node = this->findMinimax();
 
     return_move->x = return_node->ancestor->x;
     return_move->y = return_node->ancestor->y;
-
+    
 
     // Reset our tree so that it does not confuse our minimax method.
     for(unsigned int i = 0; i < MEMLEN; i++)
@@ -143,6 +151,7 @@ int Player::buildLevel(int start, int end)
     Board currBrd, newBrd;
     Move move (0, 0);
     uint8_t level;
+    Node *sibling;
 
     // Sign to account for the polarity of our heuristic. See `board.cpp'
     int8_t sign = (this->side == BLACK ? 1 : -1);
@@ -155,7 +164,8 @@ int Player::buildLevel(int start, int end)
         level = this->brain.tree[idx].level;
         currBrd = this->brain.tree[idx].board; // fetch the board
         currSide = enemyof(this->brain.tree[idx].lastmove);
-
+    
+        sibling = NULL;
 
         if(!currBrd.hasMoves(currSide)) // In this case this side cannot move.
         {
@@ -163,10 +173,13 @@ int Player::buildLevel(int start, int end)
             score = this->brain.tree[idx].score;
 
             initNode(this->brain.tree[outidx], NULL, level+1, score,
-                     newBrd, currSide);
+                     newBrd, currSide, NULL, sibling);
 
             this->brain.tree[outidx].ancestor = 
             this->brain.tree[idx].ancestor;
+
+            this->brain.tree[idx].child = &this->brain.tree[outidx];
+
             outidx++;
             if((unsigned int)outidx >= MEMLEN)
             {
@@ -189,10 +202,12 @@ int Player::buildLevel(int start, int end)
                         score = sign*(newBrd.heuristic()); 
                         
                         initNode(this->brain.tree[outidx], NULL, level+1, score,
-                                 newBrd, currSide);
+                                 newBrd, currSide, NULL, sibling);
+                        sibling = &this->brain.tree[outidx];
 
                         this->brain.tree[outidx].ancestor = 
                         this->brain.tree[idx].ancestor;
+
                         outidx++;
                         
                         if((unsigned int)outidx >= MEMLEN)
@@ -203,6 +218,7 @@ int Player::buildLevel(int start, int end)
                     }
                 }
             }
+            this->brain.tree[idx].child = &this->brain.tree[outidx-1];
         }
     }
     return outidx;
@@ -219,6 +235,8 @@ int Player::buildFirstLevel()
     int outidx, i, j;
     Board currBrd, newBrd;
     Move move (0, 0);
+
+    Node *sibling = NULL;
 
     // Sign to account for the polarity of our heuristic. See `board.cpp'
     int8_t sign = (this->side == BLACK ? 1 : -1);
@@ -245,7 +263,8 @@ int Player::buildFirstLevel()
                 score = sign*(newBrd.heuristic()); 
                 
                 initNode(this->brain.tree[outidx], NULL, 1, score,
-                         newBrd, currSide);
+                         newBrd, currSide, NULL, sibling);
+                sibling = &this->brain.tree[outidx];
                 
                 this->brain.tree[outidx].ancestor = 
                 &(this->brain.tree[outidx]);
@@ -257,67 +276,155 @@ int Player::buildFirstLevel()
             }
         }
     }
+    this->brain.tree[0].child = &this->brain.tree[outidx-1];
+
     return outidx;
 }
 
 
-/**
- * findMinimax: This function finds the minimum gain of any move by looking
- * at the ancestor of each node at the lowest level.
- * 
- * return: It returns the ancestor node of the minimax brach.
-*/
-Node * Player::findMinimax(){
-    Node * curr_ancestor = NULL; // One should always be an 
-                                                // ancestor if we have valid 
-                                                // moves
-    Node * max_ancestor = &this->brain.tree[1];
-    int branch_min;             // min of the branch
-    int curr_score;
 
-    int minimax = -10000;
-
-    std::map<Node *, int> branchmins;
-    std::map<Node *, int>::iterator read;
-    
-
-    for(int i = 0; i < (int) MEMLEN;){
-        if(this->brain.tree[i].level == this->brain.bottomlevel){
-            branch_min = 10000;
-            curr_ancestor = this->brain.tree[i].ancestor;
-
-            while((this->brain.tree[i].level == this->brain.bottomlevel) && 
-                  (this->brain.tree[i].ancestor == curr_ancestor))
-            {
-                curr_score = this->brain.tree[i].score;
-                
-                if(branch_min > curr_score);
-                {
-                    branch_min = curr_score;
-                }
-                i++;
-            }
-
-            branchmins[curr_ancestor] = branch_min;
-        } else
+int16_t Player::minimax(Node *node, int8_t depth, bool maximizingPlayer)
+{
+    int16_t best, v;
+    Node *read;
+    if(!depth || !node->child)
+    {
+        return node->score;
+    }
+    if(maximizingPlayer)
+    {
+        best = - INFTY;
+        read = node->child;
+        while(read) // go through the children
         {
-            i++;
+            v = minimax(read, depth - 1, false);
+            best = max(best, v);
+
+            read = read->sibling;
+        }
+        return best;
+    } else {
+        best = INFTY;
+        read = node->child;
+        while(read) // go through the children
+        {
+            v = minimax(read, depth - 1, true);
+            best = max(best, v);
+
+            read = read->sibling;
+        }
+        return best;
+    }
+}
+
+
+// * findMinimax: This function finds the minimum gain of any move by looking
+// * at the ancestor of each node at the lowest level.
+// * 
+// * return: It returns the ancestor node of the minimax brach.
+//*/
+Node * Player::findMinimax(){
+
+    std::map<Node *, int16_t> options;
+    std::map<Node *, int16_t>::iterator it;
+    
+    Node *read = this->brain.tree[0].child;
+
+    int16_t maximumMin = -INFTY;
+    Node *outNode = NULL;
+   
+    // Peruse our options to determine which could potentially be the least
+    // bad: 
+    while(read)
+    {
+        options[read] = minimax(read, this->brain.bottomlevel, true);
+        read = read->sibling;
+    }
+
+    for(it = options.begin(); it != options.end(); it++)
+    {
+        if(it->second > maximumMin)
+        {
+            maximumMin = it->second;
+            outNode = it->first;
         }
     }
 
-    cerr << "Level: " << (int)this->brain.bottomlevel << endl;
-    for(read = branchmins.begin(); read != branchmins.end(); read++)
-    {
-
-        cerr << read->first << "\t" << read->second << endl;
-        if(read->second > minimax)
-        {
-            minimax = read->second;
-            max_ancestor = read->first;
-        } 
-    }
-    return max_ancestor;
+    return outNode;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///**
+// * findMinimax: This function finds the minimum gain of any move by looking
+// * at the ancestor of each node at the lowest level.
+// * 
+// * return: It returns the ancestor node of the minimax brach.
+//*/
+//Node * Player::findMinimax(){
+//    Node * curr_ancestor = NULL; // One should always be an 
+//                                                // ancestor if we have valid 
+//                                                // moves
+//    Node * max_ancestor = &this->brain.tree[1];
+//    int branch_min;             // min of the branch
+//    int curr_score;
+//
+//    int minimax = -10000;
+//
+//    std::map<Node *, int> branchmins;
+//    std::map<Node *, int>::iterator read;
+//    
+//
+//    for(int i = 0; i < (int) MEMLEN;){
+//        if(this->brain.tree[i].level == this->brain.bottomlevel){
+//            branch_min = 10000;
+//            curr_ancestor = this->brain.tree[i].ancestor;
+//
+//            while((this->brain.tree[i].level == this->brain.bottomlevel) && 
+//                  (this->brain.tree[i].ancestor == curr_ancestor))
+//            {
+//                curr_score = this->brain.tree[i].score;
+//                
+//                if(branch_min > curr_score);
+//                {
+//                    branch_min = curr_score;
+//                }
+//                i++;
+//            }
+//
+//            branchmins[curr_ancestor] = branch_min;
+//        } else
+//        {
+//            i++;
+//        }
+//    }
+//
+//    for(read = branchmins.begin(); read != branchmins.end(); read++)
+//    {
+//        if(read->second > minimax)
+//        {
+//            minimax = read->second;
+//            max_ancestor = read->first;
+//        }
+//    }
+//    return max_ancestor;
+//}
 
 //Node * Player::findMinimax(){
 //    Node * curr_ancestor = NULL;

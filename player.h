@@ -8,7 +8,7 @@
 #define MEMSIZE (750000000)
 #define MEMLEN (MEMSIZE/sizeof(Node))
 #define BRDSIZE (8)
-#define SEARCH_DEPTH (5)
+#define SEARCH_DEPTH (1)
 
 using namespace std;
 
@@ -24,13 +24,15 @@ struct Node
 {
     Node *ancestor;
 
+    Node *child;
+    Node *sibling;
+
     int16_t score;
     uint8_t level;
     uint8_t x;
     uint8_t y;
 
     Side lastmove;
-
     Board board;
 };
 
@@ -71,7 +73,8 @@ public:
     int buildLevel(int start, int end);
     int buildFirstLevel();
 
-    Node * findMinimax();
+    int16_t minimax(Node *node, int8_t depth, bool maximizingPlayer);
+    Node *findMinimax();
 };
 
 

@@ -207,6 +207,52 @@ int16_t Board::heuristic()
     
     ret += this->get(BLACK, 7, 7) ? CORNSCR : 0;
     ret -= this->get(WHITE, 7, 7) ? CORNSCR : 0;
+
+
+    // Penalize spaces near corners:
+
+    ret -= this->get(BLACK, 1, 0) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 1, 0) ? ADJCORNSCR : 0;
+
+    ret -= this->get(BLACK, 0, 1) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 0, 1) ? ADJCORNSCR : 0;
+    
+    ret -= this->get(BLACK, 1, 1) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 1, 1) ? ADJCORNSCR : 0;
+
+    ////////////////////////////////////////////
+    
+    ret -= this->get(BLACK, 0, 6) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 0, 6) ? ADJCORNSCR : 0;
+
+    ret -= this->get(BLACK, 1, 7) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 1, 7) ? ADJCORNSCR : 0;
+    
+    ret -= this->get(BLACK, 1, 6) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 1, 6) ? ADJCORNSCR : 0;
+
+    ////////////////////////////////////////////
+    
+    ret -= this->get(BLACK, 6, 0) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 6, 0) ? ADJCORNSCR : 0;
+
+    ret -= this->get(BLACK, 7, 1) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 7, 1) ? ADJCORNSCR : 0;
+    
+    ret -= this->get(BLACK, 6, 1) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 6, 1) ? ADJCORNSCR : 0;
+
+    ////////////////////////////////////////////
+    
+    ret -= this->get(BLACK, 6, 7) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 6, 7) ? ADJCORNSCR : 0;
+
+    ret -= this->get(BLACK, 7, 6) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 7, 6) ? ADJCORNSCR : 0;
+    
+    ret -= this->get(BLACK, 6, 6) ? ADJCORNSCR : 0;
+    ret += this->get(WHITE, 6, 6) ? ADJCORNSCR : 0;
+
     
     return((int16_t)ret);
 }

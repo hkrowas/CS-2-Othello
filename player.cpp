@@ -245,7 +245,7 @@ int Player::buildFirstLevel()
     Side currSide;
     
     currBrd = this->brain.tree[0].board; // fetch the board
-    currSide = enemyof(this->brain.tree[0].lastmove);
+    currSide = this->side;
     outidx = 1;
 
     for(i = 0; i < BRDSIZE; i++)
@@ -309,7 +309,7 @@ int16_t Player::minimax(Node *node, int8_t depth, bool maximizingPlayer)
         while(read) // go through the children
         {
             v = minimax(read, depth - 1, true);
-            best = max(best, v);
+            best = min(best, v);
 
             read = read->sibling;
         }
@@ -337,7 +337,7 @@ Node * Player::findMinimax(){
     // bad: 
     while(read)
     {
-        options[read] = minimax(read, this->brain.bottomlevel, true);
+        options[read] = minimax(read, this->brain.bottomlevel, false);
         read = read->sibling;
     }
 

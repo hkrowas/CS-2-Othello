@@ -2,8 +2,9 @@
 #define __COMMON_H__
 
 #include <stdint.h>
-
 #include <iostream>
+
+#include "error.hpp"
 
 enum Side { 
     WHITE, BLACK

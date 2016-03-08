@@ -1,6 +1,9 @@
 #include "player.h"
 #include <map>
 #include <stdlib.h>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
 
 #define INFTY (30000)
 
@@ -86,6 +89,7 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     if(!this->board.hasMoves(this->side)){
         return NULL;        // if game is over, no move is possible
     }
+
 
 
     //// Allocate space for our tree:
@@ -183,7 +187,8 @@ int Player::buildLevel(int start, int end)
             outidx++;
             if((unsigned int)outidx >= MEMLEN)
             {
-                cerr << "OUT OF MEMORY!" << endl;
+
+                WARN(__FILE__, __LINE__, "OUT OF MEMORY AT LEVEL %d!", level);
                 return 0;
             }
         } else {
@@ -212,7 +217,8 @@ int Player::buildLevel(int start, int end)
                         
                         if((unsigned int)outidx >= MEMLEN)
                         {
-                            cerr << "OUT OF MEMORY!" << endl;
+                            WARN(__FILE__, __LINE__, 
+                                           "OUT OF MEMORY AT LEVEL %d!", level);
                             return 0;
                         }
                     }
@@ -325,6 +331,8 @@ int16_t Player::minimax(Node *node, int8_t depth, bool maximizingPlayer)
 //*/
 Node * Player::findMinimax(){
 
+    srand(time(NULL));
+
     std::map<Node *, int16_t> options;
     std::map<Node *, int16_t>::iterator it;
     
@@ -346,9 +354,25 @@ Node * Player::findMinimax(){
         if(it->second > maximumMin)
         {
             maximumMin = it->second;
-            outNode = it->first;
+            //outNode = it->first;
         }
     }
+   
+
+    // Find all moves which may be optimal so we can choose a random best move 
+    std::vector<Node*> bestmoves;
+   
+    for(it = options.begin(); it != options.end(); it++)
+    {
+        if(it->second == maximumMin)
+        {
+            bestmoves.push_back(it->first);
+        }
+    }
+
+    int choice = rand() % bestmoves.size();
+
+    outNode = bestmoves[choice];
 
     return outNode;
 }

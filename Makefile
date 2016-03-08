@@ -16,6 +16,7 @@ testminimax: $(OBJS) testminimax.o
 
 %.o: %.cpp
 	$(CC) -c $(CFLAGS) -x c++ $< -o $@
+
 	
 java:
 	make -C java/

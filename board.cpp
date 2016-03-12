@@ -185,7 +185,7 @@ void Board::setBoard(char data[]) {
 
 /**
  * heuristic: A very basic heuristic for weighting different boards. Polarized
- * such that negative is better for white.
+ * such that positive is better for black.
  */
 int16_t Board::heuristic()
 {
@@ -195,65 +195,87 @@ int16_t Board::heuristic()
     int ret = (this->hasMoves(WHITE) || this->hasMoves(BLACK)) ? base : base +
         sign*WINSC;
 
-    //check corners
-    ret += this->get(BLACK, 0, 0) ? CORNSCR : 0;
-    ret -= this->get(WHITE, 0, 0) ? CORNSCR : 0;
+    if(this->countBlack() + this->countWhite() > 56){   // if near end, just count stones
+        ret = this->countBlack() - this->countWhite();
+    }
+    else{
+        //check corners
+        ret += this->get(BLACK, 0, 0) ? CORNSCR : 0;
+        ret -= this->get(WHITE, 0, 0) ? CORNSCR : 0;
 
-    ret += this->get(BLACK, 7, 0) ? CORNSCR : 0;
-    ret -= this->get(WHITE, 7, 0) ? CORNSCR : 0;
-    
-    ret += this->get(BLACK, 0, 7) ? CORNSCR : 0;
-    ret -= this->get(WHITE, 0, 7) ? CORNSCR : 0;
-    
-    ret += this->get(BLACK, 7, 7) ? CORNSCR : 0;
-    ret -= this->get(WHITE, 7, 7) ? CORNSCR : 0;
+        ret += this->get(BLACK, 7, 0) ? CORNSCR : 0;
+        ret -= this->get(WHITE, 7, 0) ? CORNSCR : 0;
+        
+        ret += this->get(BLACK, 0, 7) ? CORNSCR : 0;
+        ret -= this->get(WHITE, 0, 7) ? CORNSCR : 0;
+        
+        ret += this->get(BLACK, 7, 7) ? CORNSCR : 0;
+        ret -= this->get(WHITE, 7, 7) ? CORNSCR : 0;
 
 
-    // Penalize spaces near corners:
+        // Penalize spaces near corners:
 
-    ret -= this->get(BLACK, 1, 0) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 1, 0) ? ADJCORNSCR : 0;
+        ret -= this->get(BLACK, 1, 0) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 1, 0) ? ADJCORNSCR : 0;
 
-    ret -= this->get(BLACK, 0, 1) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 0, 1) ? ADJCORNSCR : 0;
-    
-    ret -= this->get(BLACK, 1, 1) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 1, 1) ? ADJCORNSCR : 0;
+        ret -= this->get(BLACK, 0, 1) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 0, 1) ? ADJCORNSCR : 0;
+        
+        ret -= this->get(BLACK, 1, 1) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 1, 1) ? ADJCORNSCR : 0;
 
-    ////////////////////////////////////////////
-    
-    ret -= this->get(BLACK, 0, 6) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 0, 6) ? ADJCORNSCR : 0;
+        ////////////////////////////////////////////
+        
+        ret -= this->get(BLACK, 0, 6) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 0, 6) ? ADJCORNSCR : 0;
 
-    ret -= this->get(BLACK, 1, 7) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 1, 7) ? ADJCORNSCR : 0;
-    
-    ret -= this->get(BLACK, 1, 6) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 1, 6) ? ADJCORNSCR : 0;
+        ret -= this->get(BLACK, 1, 7) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 1, 7) ? ADJCORNSCR : 0;
+        
+        ret -= this->get(BLACK, 1, 6) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 1, 6) ? ADJCORNSCR : 0;
 
-    ////////////////////////////////////////////
-    
-    ret -= this->get(BLACK, 6, 0) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 6, 0) ? ADJCORNSCR : 0;
+        ////////////////////////////////////////////
+        
+        ret -= this->get(BLACK, 6, 0) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 6, 0) ? ADJCORNSCR : 0;
 
-    ret -= this->get(BLACK, 7, 1) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 7, 1) ? ADJCORNSCR : 0;
-    
-    ret -= this->get(BLACK, 6, 1) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 6, 1) ? ADJCORNSCR : 0;
+        ret -= this->get(BLACK, 7, 1) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 7, 1) ? ADJCORNSCR : 0;
+        
+        ret -= this->get(BLACK, 6, 1) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 6, 1) ? ADJCORNSCR : 0;
 
-    ////////////////////////////////////////////
-    
-    ret -= this->get(BLACK, 6, 7) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 6, 7) ? ADJCORNSCR : 0;
+        ////////////////////////////////////////////
+        
+        ret -= this->get(BLACK, 6, 7) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 6, 7) ? ADJCORNSCR : 0;
 
-    ret -= this->get(BLACK, 7, 6) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 7, 6) ? ADJCORNSCR : 0;
-    
-    ret -= this->get(BLACK, 6, 6) ? ADJCORNSCR : 0;
-    ret += this->get(WHITE, 6, 6) ? ADJCORNSCR : 0;
+        ret -= this->get(BLACK, 7, 6) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 7, 6) ? ADJCORNSCR : 0;
+        
+        ret -= this->get(BLACK, 6, 6) ? ADJCORNSCR : 0;
+        ret += this->get(WHITE, 6, 6) ? ADJCORNSCR : 0;
 
-    
+        // Check edge spaces
+
+        for(int i = 1; i < 7; i++){
+            ret += this->get(BLACK, i, 0) ? EDGESCR : 0;
+            ret -= this->get(WHITE, i, 0) ? EDGESCR : 0;
+        }
+        for(int i = 1; i < 7; i++){
+            ret += this->get(BLACK, 0, i) ? EDGESCR : 0;
+            ret -= this->get(WHITE, 0, i) ? EDGESCR : 0;
+        }
+        for(int i = 1; i < 7; i++){
+            ret += this->get(BLACK, i, 7) ? EDGESCR : 0;
+            ret -= this->get(WHITE, i, 7) ? EDGESCR : 0;
+        }
+        for(int i = 1; i < 7; i++){
+            ret += this->get(BLACK, 7, i) ? EDGESCR : 0;
+            ret -= this->get(WHITE, 7, i) ? EDGESCR : 0;
+        }
+    }
     return((int16_t)ret);
 }
 

@@ -8,7 +8,7 @@
 #define MEMSIZE (750000000)
 #define MEMLEN (MEMSIZE/sizeof(Node))
 #define BRDSIZE (8)
-#define SEARCH_DEPTH (7)
+#define SEARCH_DEPTH (10)
 
 using namespace std;
 

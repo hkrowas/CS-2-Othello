@@ -5,8 +5,9 @@
 #include "common.h"
 
 #define WINSC (100)
-#define CORNSCR (6)
-#define ADJCORNSCR (2)
+#define CORNSCR (2)
+#define ADJCORNSCR (0)
+#define EDGESCR (1)
 
 using namespace std;
 

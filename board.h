@@ -5,9 +5,10 @@
 #include "common.h"
 
 #define WINSC (100)
-#define CORNSCR (2)
+#define CORNSCR (5)
 #define ADJCORNSCR (0)
-#define EDGESCR (1)
+#define EDGESCR (3)
+#define NEAREND (48)    // how close near end to switch to a simpler heuristic
 
 using namespace std;
 

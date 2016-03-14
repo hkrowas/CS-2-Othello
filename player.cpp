@@ -135,7 +135,6 @@ Move *Player::doMove(Move *opponentsMove, int msLeft) {
     }
 
     this->board.doMove(return_move, this->side);
-    cerr << (int)sizeof(Node *) << endl;
     return return_move;
 }
 

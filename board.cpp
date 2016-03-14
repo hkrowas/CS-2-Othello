@@ -195,7 +195,7 @@ int16_t Board::heuristic()
     int ret = (this->hasMoves(WHITE) || this->hasMoves(BLACK)) ? base : base +
         sign*WINSC;
 
-    if(this->countBlack() + this->countWhite() > 56){   // if near end, just count stones
+    if(this->countBlack() + this->countWhite() > NEAREND){   // if near end, just count stones
         ret = this->countBlack() - this->countWhite();
     }
     else{

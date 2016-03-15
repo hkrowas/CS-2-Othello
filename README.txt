@@ -1,5 +1,9 @@
 Harrison Krowas: Contributed ideas for runtime acceleration. Improved and fine-tuned heuristic.
 
+Michael Bauer: Did much of the initial coding and debugging to get the player
+working (i.e.  valid moves, beating SimplePlayer and ConstantTimePlayer) in
+collaboration with Harrison Krowas. Made the initial differential heuristic.
+
 Improvements:
 
 The game tree is allocated in the player constructor with a single "new" operation. This cuts down on runtime by eliminating the constant time memory allocation overhead associated with each "new" operation. Because of this  improvement, the AI runs out of memory (750 MB) well before the game clock expires. It is able to compute the game tree to around level 7 or 8 before running out of memory.
